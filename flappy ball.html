@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Flappy - Minimalist Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            background: radial-gradient(ellipse at center, #1a1a2e 0%, #0f0f23 100%);
+            border: 2px solid #00ffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 
+                0 0 20px #00ffff,
+                inset 0 0 20px rgba(0, 255, 255, 0.1);
+        }
+
+        #bird {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #ff0080;
+            border-radius: 50%;
+            box-shadow: 
+                0 0 15px #ff0080,
+                0 0 30px #ff0080,
+                0 0 45px #ff0080;
+            z-index: 10;
+            will-change: transform;
+            backface-visibility: hidden;
+        }
+
+        .pipe {
+            position: absolute;
+            width: 50px;
+            background: linear-gradient(90deg, #00ff41, #00cc33);
+            border: 1px solid #00ff41;
+            box-shadow: 
+                0 0 10px #00ff41,
+                inset 0 0 10px rgba(0, 255, 65, 0.2);
+            will-change: transform;
+            backface-visibility: hidden;
+        }
+
+        .pipe-top {
+            top: 0;
+            border-radius: 0 0 5px 5px;
+        }
+
+        .pipe-bottom {
+            bottom: 0;
+            border-radius: 5px 5px 0 0;
+        }
+
+        #score {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ffff;
+            text-shadow: 
+                0 0 10px #00ffff,
+                0 0 20px #00ffff;
+            z-index: 20;
+            font-family: 'Courier New', monospace;
+        }
+
+        #bestScore {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #ff0080;
+            text-shadow: 
+                0 0 10px #ff0080,
+                0 0 20px #ff0080;
+            z-index: 20;
+            font-family: 'Courier New', monospace;
+        }
+
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #ff0080;
+            color: #ff0080;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+            z-index: 30;
+            box-shadow: 
+                0 0 20px #ff0080,
+                inset 0 0 20px rgba(255, 0, 128, 0.1);
+        }
+
+        .color-picker {
+            margin: 20px 0;
+        }
+
+        .color-picker h3 {
+            color: #00ffff;
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .color-options {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .color-option:hover {
+            transform: scale(1.2);
+            border-color: #ffffff;
+        }
+
+        .color-option.selected {
+            border-color: #00ffff;
+            box-shadow: 0 0 15px currentColor;
+        }
+
+        .color-option.pink { background: #ff0080; box-shadow: 0 0 10px #ff0080; }
+        .color-option.blue { background: #0080ff; box-shadow: 0 0 10px #0080ff; }
+        .color-option.green { background: #00ff80; box-shadow: 0 0 10px #00ff80; }
+        .color-option.purple { background: #8000ff; box-shadow: 0 0 10px #8000ff; }
+        .color-option.orange { background: #ff8000; box-shadow: 0 0 10px #ff8000; }
+        .color-option.cyan { background: #00ffff; box-shadow: 0 0 10px #00ffff; }
+
+        #startScreen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ffff;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 30;
+            box-shadow: 
+                0 0 20px #00ffff,
+                inset 0 0 20px rgba(0, 255, 255, 0.1);
+        }
+
+        button {
+            background: transparent;
+            color: #00ff41;
+            border: 2px solid #00ff41;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            background: #00ff41;
+            color: #000;
+            box-shadow: 
+                0 0 15px #00ff41,
+                0 0 30px #00ff41;
+            transform: translateY(-2px);
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #00ffff;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particle-float 3s infinite ease-in-out;
+        }
+
+        @keyframes particle-float {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100px) scale(0);
+            }
+        }
+
+        .grid-line {
+            position: absolute;
+            background: rgba(0, 255, 255, 0.1);
+            pointer-events: none;
+        }
+
+        .grid-horizontal {
+            width: 100%;
+            height: 1px;
+        }
+
+        .grid-vertical {
+            width: 1px;
+            height: 100%;
+        }
+
+        h1, h2 {
+            color: #00ffff;
+            text-shadow: 
+                0 0 10px #00ffff,
+                0 0 20px #00ffff;
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        p {
+            color: #ffffff;
+            margin-bottom: 20px;
+            font-family: 'Courier New', monospace;
+            opacity: 0.8;
+        }
+
+        .glow-pulse {
+            animation: glow-pulse 2s infinite ease-in-out;
+        }
+
+        @keyframes glow-pulse {
+            0%, 100% {
+                box-shadow: 
+                    0 0 15px #ff0080,
+                    0 0 30px #ff0080,
+                    0 0 45px #ff0080;
+            }
+            50% {
+                box-shadow: 
+                    0 0 20px #ff0080,
+                    0 0 40px #ff0080,
+                    0 0 60px #ff0080;
+            }
+        }
+
+        @keyframes explosion-flash {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(2);
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <!-- Grid background -->
+        <div class="grid-line grid-horizontal" style="top: 150px;"></div>
+        <div class="grid-line grid-horizontal" style="top: 300px;"></div>
+        <div class="grid-line grid-horizontal" style="top: 450px;"></div>
+        <div class="grid-line grid-vertical" style="left: 100px;"></div>
+        <div class="grid-line grid-vertical" style="left: 200px;"></div>
+        <div class="grid-line grid-vertical" style="left: 300px;"></div>
+        
+        <div id="score">00</div>
+        <div id="bestScore">BEST: 00</div>
+        
+        <div id="bird" class="glow-pulse"></div>
+        
+        <div id="startScreen">
+            <h1>NEON FLAPPY</h1>
+            <p>CLICK OR PRESS SPACE</p>
+            <button onclick="startGame()">START</button>
+        </div>
+        
+        <div id="gameOver">
+            <h2>GAME OVER</h2>
+            <p id="finalScore">SCORE: 00</p>
+            
+            <div class="color-picker">
+                <h3>Choose Ball Color</h3>
+                <div class="color-options">
+                    <div class="color-option pink selected" onclick="selectColor('#ff0080', 'pink')"></div>
+                    <div class="color-option blue" onclick="selectColor('#0080ff', 'blue')"></div>
+                    <div class="color-option green" onclick="selectColor('#00ff80', 'green')"></div>
+                    <div class="color-option purple" onclick="selectColor('#8000ff', 'purple')"></div>
+                    <div class="color-option orange" onclick="selectColor('#ff8000', 'orange')"></div>
+                    <div class="color-option cyan" onclick="selectColor('#00ffff', 'cyan')"></div>
+                </div>
+            </div>
+            
+            <button onclick="restartGame()">RESTART</button>
+        </div>
+    </div>
+
+    <script>
+        const bird = document.getElementById('bird');
+        const gameContainer = document.getElementById('gameContainer');
+        const scoreElement = document.getElementById('score');
+        const bestScoreElement = document.getElementById('bestScore');
+        const gameOverScreen = document.getElementById('gameOver');
+        const startScreen = document.getElementById('startScreen');
+        const finalScoreElement = document.getElementById('finalScore');
+
+        let birdY = 250;
+        let birdVelocity = 0;
+        let gravity = 0.35;
+        let jumpStrength = -6.5;
+        let gameRunning = false;
+        let score = 0;
+        let bestScore = localStorage.getItem('neonFlappyBest') || 0;
+        let pipes = [];
+        let pipeSpeed = 2;
+        let pipeGap = 140;
+        let pipeWidth = 50;
+        let nextPipeDistance = 280;
+        let birdColor = localStorage.getItem('neonFlappyColor') || '#ff0080';
+        let selectedColorClass = localStorage.getItem('neonFlappyColorClass') || 'pink';
+        let lastTime = 0;
+        let deltaTime = 0;
+        let targetFPS = 60;
+        let frameInterval = 1000 / targetFPS;
+
+        function updateBirdPosition() {
+            bird.style.transform = `translate3d(60px, ${birdY}px, 0)`;
+        }
+
+        function selectColor(color, colorClass) {
+            birdColor = color;
+            selectedColorClass = colorClass;
+            localStorage.setItem('neonFlappyColor', color);
+            localStorage.setItem('neonFlappyColorClass', colorClass);
+            
+            // Update bird color
+            bird.style.background = color;
+            bird.style.boxShadow = `0 0 15px ${color}, 0 0 30px ${color}, 0 0 45px ${color}`;
+            
+            // Update selected color indicator
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            document.querySelector(`.color-option.${colorClass}`).classList.add('selected');
+        }
+
+        function jump() {
+            if (gameRunning) {
+                birdVelocity = jumpStrength;
+                createParticles();
+            }
+        }
+
+        function createParticles() {
+            for (let i = 0; i < 12; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                const angle = (Math.PI * 2 * i) / 12;
+                const velocity = 2 + Math.random() * 3;
+                const size = 2 + Math.random() * 3;
+                
+                particle.style.left = (70 + Math.random() * 10) + 'px';
+                particle.style.top = (birdY + 10 + Math.random() * 10) + 'px';
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.background = `hsl(${180 + Math.random() * 60}, 100%, 70%)`;
+                particle.style.boxShadow = `0 0 ${size * 3}px currentColor`;
+                
+                gameContainer.appendChild(particle);
+                
+                // Animate particle manually for better control
+                let particleX = parseFloat(particle.style.left);
+                let particleY = parseFloat(particle.style.top);
+                let vx = Math.cos(angle) * velocity;
+                let vy = Math.sin(angle) * velocity;
+                let life = 1;
+                
+                const animateParticle = () => {
+                    particleX += vx;
+                    particleY += vy;
+                    vy += 0.1; // gravity
+                    life -= 0.02;
+                    
+                    particle.style.left = particleX + 'px';
+                    particle.style.top = particleY + 'px';
+                    particle.style.opacity = life;
+                    particle.style.transform = `scale(${life})`;
+                    
+                    if (life > 0 && particle.parentNode) {
+                        requestAnimationFrame(animateParticle);
+                    } else if (particle.parentNode) {
+                        particle.parentNode.removeChild(particle);
+                    }
+                };
+                
+                requestAnimationFrame(animateParticle);
+            }
+        }
+
+        function createBurstEffect() {
+            // Create main explosion flash
+            const flash = document.createElement('div');
+            flash.style.position = 'absolute';
+            flash.style.left = '50px';
+            flash.style.top = (birdY - 10) + 'px';
+            flash.style.width = '40px';
+            flash.style.height = '40px';
+            flash.style.background = `radial-gradient(circle, #ffffff 0%, ${birdColor} 30%, transparent 70%)`;
+            flash.style.borderRadius = '50%';
+            flash.style.pointerEvents = 'none';
+            flash.style.zIndex = '20';
+            flash.style.animation = 'explosion-flash 0.5s ease-out';
+            
+            gameContainer.appendChild(flash);
+            
+            setTimeout(() => {
+                if (flash.parentNode) flash.parentNode.removeChild(flash);
+            }, 500);
+            
+            // Create burst particles
+            for (let i = 0; i < 35; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'burst-particle';
+                
+                const angle = (Math.PI * 2 * i) / 35;
+                const velocity = 4 + Math.random() * 6;
+                const size = 4 + Math.random() * 6;
+                
+                particle.style.position = 'absolute';
+                particle.style.left = (70) + 'px';
+                particle.style.top = (birdY + 10) + 'px';
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.background = i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? birdColor : '#ff4040';
+                particle.style.borderRadius = '50%';
+                particle.style.boxShadow = `0 0 ${size * 5}px currentColor`;
+                particle.style.pointerEvents = 'none';
+                particle.style.zIndex = '15';
+                
+                gameContainer.appendChild(particle);
+                
+                // Animate burst particle
+                let particleX = 70;
+                let particleY = birdY + 10;
+                let vx = Math.cos(angle) * velocity;
+                let vy = Math.sin(angle) * velocity;
+                let life = 1;
+                
+                const animateBurst = () => {
+                    particleX += vx;
+                    particleY += vy;
+                    vy += 0.2; // stronger gravity
+                    vx *= 0.97; // air resistance
+                    life -= 0.012;
+                    
+                    particle.style.left = particleX + 'px';
+                    particle.style.top = particleY + 'px';
+                    particle.style.opacity = life;
+                    particle.style.transform = `scale(${life * 1.5})`;
+                    
+                    if (life > 0 && particle.parentNode) {
+                        requestAnimationFrame(animateBurst);
+                    } else if (particle.parentNode) {
+                        particle.parentNode.removeChild(particle);
+                    }
+                };
+                
+                requestAnimationFrame(animateBurst);
+            }
+        }
+
+        function createPipe() {
+            const topPipe = document.createElement('div');
+            const bottomPipe = document.createElement('div');
+            
+            const gapStart = Math.random() * (450 - pipeGap - 100) + 75;
+            
+            topPipe.className = 'pipe pipe-top';
+            topPipe.style.height = gapStart + 'px';
+            topPipe.style.willChange = 'transform';
+            topPipe.style.transform = 'translate3d(400px, 0, 0)';
+            
+            bottomPipe.className = 'pipe pipe-bottom';
+            bottomPipe.style.height = (600 - gapStart - pipeGap) + 'px';
+            bottomPipe.style.willChange = 'transform';
+            bottomPipe.style.transform = 'translate3d(400px, 0, 0)';
+            
+            gameContainer.appendChild(topPipe);
+            gameContainer.appendChild(bottomPipe);
+            
+            pipes.push({
+                top: topPipe,
+                bottom: bottomPipe,
+                x: 400,
+                scored: false
+            });
+        }
+
+        function updatePipes() {
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                const pipe = pipes[i];
+                pipe.x -= pipeSpeed;
+                
+                pipe.top.style.transform = `translate3d(${pipe.x}px, 0, 0)`;
+                pipe.bottom.style.transform = `translate3d(${pipe.x}px, 0, 0)`;
+                
+                // Check for scoring
+                if (!pipe.scored && pipe.x + pipeWidth < 60) {
+                    score++;
+                    scoreElement.textContent = score.toString().padStart(2, '0');
+                    pipe.scored = true;
+                }
+                
+                // Remove pipes that are off screen
+                if (pipe.x + pipeWidth < 0) {
+                    gameContainer.removeChild(pipe.top);
+                    gameContainer.removeChild(pipe.bottom);
+                    pipes.splice(i, 1);
+                }
+            }
+        }
+
+        function checkCollision() {
+            const birdRect = {
+                left: 60,
+                right: 80,
+                top: birdY,
+                bottom: birdY + 20
+            };
+            
+            // Check ground and ceiling collision
+            if (birdY <= 0 || birdY >= 580) {
+                return true;
+            }
+            
+            // Check pipe collision
+            for (let pipe of pipes) {
+                if (birdRect.right > pipe.x && birdRect.left < pipe.x + pipeWidth) {
+                    const topPipeHeight = parseInt(pipe.top.style.height);
+                    const bottomPipeTop = 600 - parseInt(pipe.bottom.style.height);
+                    
+                    if (birdRect.top < topPipeHeight || birdRect.bottom > bottomPipeTop) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+
+        function gameLoop(currentTime) {
+            if (!gameRunning) return;
+            
+            // Calculate delta time for smooth animation
+            if (lastTime === 0) lastTime = currentTime;
+            deltaTime = currentTime - lastTime;
+            
+            // Only update if enough time has passed (60 FPS cap)
+            if (deltaTime >= frameInterval) {
+                // Update bird physics
+                birdVelocity += gravity;
+                birdY += birdVelocity;
+                
+                updateBirdPosition();
+                updatePipes();
+                
+                // Create new pipes (limit to prevent performance issues)
+                if (pipes.length < 3 && (pipes.length === 0 || pipes[pipes.length - 1].x < nextPipeDistance)) {
+                    createPipe();
+                }
+                
+                // Check collision
+                if (checkCollision()) {
+                    endGame();
+                    return;
+                }
+                
+                lastTime = currentTime;
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            gameRunning = true;
+            birdY = 250;
+            birdVelocity = 0;
+            score = 0;
+            pipes = [];
+            pipeSpeed = 2;
+            lastTime = 0;
+            
+            // Clear existing pipes
+            const existingPipes = document.querySelectorAll('.pipe');
+            existingPipes.forEach(pipe => pipe.remove());
+            
+            // Clear particles
+            const existingParticles = document.querySelectorAll('.particle, .burst-particle');
+            existingParticles.forEach(particle => particle.remove());
+            
+            scoreElement.textContent = '00';
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            bird.style.display = 'block';
+            
+            updateBirdPosition();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function endGame() {
+            gameRunning = false;
+            
+            // Update best score
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('neonFlappyBest', bestScore);
+                bestScoreElement.textContent = 'BEST: ' + bestScore.toString().padStart(2, '0');
+            }
+            
+            createBurstEffect();
+            bird.style.display = 'none';
+            
+            setTimeout(() => {
+                finalScoreElement.textContent = 'SCORE: ' + score.toString().padStart(2, '0');
+                gameOverScreen.style.display = 'block';
+            }, 1000);
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (!gameRunning && startScreen.style.display !== 'none') {
+                    startGame();
+                } else {
+                    jump();
+                }
+            }
+        });
+
+        gameContainer.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+                if (!gameRunning && startScreen.style.display !== 'none') {
+                    startGame();
+                } else {
+                    jump();
+                }
+            }
+        });
+
+        // Initialize
+        bestScoreElement.textContent = 'BEST: ' + bestScore.toString().padStart(2, '0');
+        
+        // Set initial bird color
+        bird.style.background = birdColor;
+        bird.style.boxShadow = `0 0 15px ${birdColor}, 0 0 30px ${birdColor}, 0 0 45px ${birdColor}`;
+        
+        // Set initial selected color
+        document.querySelector(`.color-option.${selectedColorClass}`).classList.add('selected');
+        
+        updateBirdPosition();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96d16603b0528fa1',t:'MTc1NDg0ODg4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
